@@ -18,6 +18,7 @@ namespace ExamenFinal
         public float z = -5.0f;					// Depth Into The Screen
 
         public float xspeed = 0.1f;
+        public float yspeed = 0.1f;
 
         // Lighting components for the cube
         public float[] LightAmbient = { 0.2f, 0.2f, 0.2f, 1.0f };
@@ -25,7 +26,7 @@ namespace ExamenFinal
         public float[] LightPosition = { 0.0f, 0.0f, 2.0f, 1.0f };
 
         public int filter = 0;					// Which Filter To Use
-        public int[] texture = new int[3];	// Texture array
+        public int[] texture = new int[6];	// Texture array
 
         Form f;
 
@@ -56,9 +57,7 @@ namespace ExamenFinal
 
             gl.glEnable(GL.GL_NORMALIZE); //garantizar vectores de luz apropiados
 
-
             LoadTextures(gl);
- 
             gl.glEnable(GL.GL_TEXTURE_2D);									// Enable Texture Mapping
             gl.glShadeModel(GL.GL_SMOOTH);								// enable smooth shading
 
@@ -75,7 +74,6 @@ namespace ExamenFinal
             if (true == gl.bwglSwapIntervalEXT)
             {
                 gl.wglSwapIntervalEXT(1);
-
             }
         }
 
@@ -83,37 +81,45 @@ namespace ExamenFinal
         protected bool LoadTextures(GL gl)
         {
             Bitmap image = null;
-            string file = @"C:\Users\Victor\Documents\Workspace\Graficas\ElPlanetero2\ExamenFinal\Texturas\lado5.bmp";
-            try
+            string[] files = new string[6];
+            files[0] = @"C:\Users\Victor\Documents\Workspace\Graficas\ElPlanetero2\ExamenFinal\Texturas\bot.png";
+            files[1] = @"C:\Users\Victor\Documents\Workspace\Graficas\ElPlanetero2\ExamenFinal\Texturas\lado1.png";
+            files[2] = @"C:\Users\Victor\Documents\Workspace\Graficas\ElPlanetero2\ExamenFinal\Texturas\lado2.png";
+            files[3] = @"C:\Users\Victor\Documents\Workspace\Graficas\ElPlanetero2\ExamenFinal\Texturas\lado3.png";
+            files[4] = @"C:\Users\Victor\Documents\Workspace\Graficas\ElPlanetero2\ExamenFinal\Texturas\lado5.png";
+            files[5] = @"C:\Users\Victor\Documents\Workspace\Graficas\ElPlanetero2\ExamenFinal\Texturas\top.png";
+
+            int idx = 0;
+            gl.glGenTextures(6, this.texture);
+            while (idx < files.Length)
             {
-                image = new Bitmap(file);
+                try
+                {
+                    image = new Bitmap(files[idx]);
+                }
+                catch (System.ArgumentException)
+                {
+                    MessageBox.Show("Could not load " + files[idx] + ".  Please make sure that Data is a subfolder from where the application is running.", "Error", MessageBoxButtons.OK);
+                    f.Dispose(); //Cerrar la forma
+                }
+                if (image != null)
+                {
+                    image.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                    System.Drawing.Imaging.BitmapData bitmapdata;
+                    Rectangle rect = new Rectangle(0, 0, image.Width, image.Height);
+                    bitmapdata = image.LockBits(rect, System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+
+                    gl.glBindTexture(GL.GL_TEXTURE_2D, this.texture[idx]);
+                    gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
+                    gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
+                    gl.glTexImage2D(GL.GL_TEXTURE_2D, 0, (int)GL.GL_RGB, 513, 513, 0, GL.GL_BGR_EXT, GL.GL_UNSIGNED_BYTE, bitmapdata.Scan0);
+
+                    image.UnlockBits(bitmapdata);
+                    image.Dispose();
+                }
+                idx = idx + 1;
             }
-            catch (System.ArgumentException)
-            {
-                MessageBox.Show("Could not load " + file + ".  Please make sure that Data is a subfolder from where the application is running.", "Error", MessageBoxButtons.OK);
-                f.Dispose(); //Cerrar la forma
-            }
-            if (image != null)
-            {
-                image.RotateFlip(RotateFlipType.RotateNoneFlipY);
-                System.Drawing.Imaging.BitmapData bitmapdata;
-                Rectangle rect = new Rectangle(0, 0, image.Width, image.Height);
-
-                bitmapdata = image.LockBits(rect, System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
-
-                gl.glGenTextures(1, this.texture);
-
-                gl.glBindTexture(GL.GL_TEXTURE_2D, this.texture[0]);
-                gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
-                gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
-                gl.glTexImage2D(GL.GL_TEXTURE_2D, 0, (int)GL.GL_RGB, image.Width, image.Height, 0, GL.GL_BGR_EXT, GL.GL_UNSIGNED_BYTE, bitmapdata.Scan0);
-
-                image.UnlockBits(bitmapdata);
-                image.Dispose();
-
-                return true;
-            }
-            return false;
+            return true;
         }
 
         public void Paint(object sender, PaintEventArgs e)
@@ -180,49 +186,74 @@ namespace ExamenFinal
         
             gl.glTranslatef(0.0f, 0.0f, this.z);
 
-            gl.glRotatef(this.xrot, 1.0f, 0.0f, 0.0f);
-            gl.glRotatef(this.yrot, 0.0f, 1.0f, 0.0f);
+            gl.glRotatef(xrot, 1.0f, 0.0f, 1.0f);
+            gl.glRotatef(yrot, 0.0f, 1.0f, 1.0f);
 
-            gl.glBindTexture(GL.GL_TEXTURE_2D, this.texture[filter]);
+            gl.glPushMatrix();
+                gl.glScaled(10,10,10);
 
-            gl.glBegin(GL.GL_QUADS);
-            // Front Face
-            gl.glNormal3f(0.0f, 0.0f, 1.0f);
-            gl.glTexCoord2f(0.0f, 0.0f); gl.glVertex3f(-1.0f, -1.0f, 1.0f);
-            gl.glTexCoord2f(1.0f, 0.0f); gl.glVertex3f(1.0f, -1.0f, 1.0f);
-            gl.glTexCoord2f(1.0f, 1.0f); gl.glVertex3f(1.0f, 1.0f, 1.0f);
-            gl.glTexCoord2f(0.0f, 1.0f); gl.glVertex3f(-1.0f, 1.0f, 1.0f);
-            // Back Face
-            gl.glNormal3f(0.0f, 0.0f, -1.0f);
-            gl.glTexCoord2f(1.0f, 0.0f); gl.glVertex3f(-1.0f, -1.0f, -1.0f);
-            gl.glTexCoord2f(1.0f, 1.0f); gl.glVertex3f(-1.0f, 1.0f, -1.0f);
-            gl.glTexCoord2f(0.0f, 1.0f); gl.glVertex3f(1.0f, 1.0f, -1.0f);
-            gl.glTexCoord2f(0.0f, 0.0f); gl.glVertex3f(1.0f, -1.0f, -1.0f);
-            // Top Face
-            gl.glNormal3f(0.0f, 1.0f, 0.0f);
-            gl.glTexCoord2f(0.0f, 1.0f); gl.glVertex3f(-1.0f, 1.0f, -1.0f);
-            gl.glTexCoord2f(0.0f, 0.0f); gl.glVertex3f(-1.0f, 1.0f, 1.0f);
-            gl.glTexCoord2f(1.0f, 0.0f); gl.glVertex3f(1.0f, 1.0f, 1.0f);
-            gl.glTexCoord2f(1.0f, 1.0f); gl.glVertex3f(1.0f, 1.0f, -1.0f);
-            // Bottom Face
-            gl.glNormal3f(0.0f, -1.0f, 0.0f);
-            gl.glTexCoord2f(1.0f, 1.0f); gl.glVertex3f(-1.0f, -1.0f, -1.0f);
-            gl.glTexCoord2f(0.0f, 1.0f); gl.glVertex3f(1.0f, -1.0f, -1.0f);
-            gl.glTexCoord2f(0.0f, 0.0f); gl.glVertex3f(1.0f, -1.0f, 1.0f);
-            gl.glTexCoord2f(1.0f, 0.0f); gl.glVertex3f(-1.0f, -1.0f, 1.0f);
-            // Right face
-            gl.glNormal3f(1.0f, 0.0f, 0.0f);
-            gl.glTexCoord2f(1.0f, 0.0f); gl.glVertex3f(1.0f, -1.0f, -1.0f);
-            gl.glTexCoord2f(1.0f, 1.0f); gl.glVertex3f(1.0f, 1.0f, -1.0f);
-            gl.glTexCoord2f(0.0f, 1.0f); gl.glVertex3f(1.0f, 1.0f, 1.0f);
-            gl.glTexCoord2f(0.0f, 0.0f); gl.glVertex3f(1.0f, -1.0f, 1.0f);
-            // Left Face
-            gl.glNormal3f(-1.0f, 0.0f, 0.0f);
-            gl.glTexCoord2f(0.0f, 0.0f); gl.glVertex3f(-1.0f, -1.0f, -1.0f);
-            gl.glTexCoord2f(1.0f, 0.0f); gl.glVertex3f(-1.0f, -1.0f, 1.0f);
-            gl.glTexCoord2f(1.0f, 1.0f); gl.glVertex3f(-1.0f, 1.0f, 1.0f);
-            gl.glTexCoord2f(0.0f, 1.0f); gl.glVertex3f(-1.0f, 1.0f, -1.0f);
-            gl.glEnd();
+                gl.glBindTexture(GL.GL_TEXTURE_2D, this.texture[0]);
+                gl.glBegin(GL.GL_QUADS);
+                // Front Face
+                gl.glNormal3f(0.0f, 0.0f, 1.0f);
+                gl.glTexCoord2f(0.0f, 0.0f); gl.glVertex3f(-1.0f, -1.0f, 1.0f);
+                gl.glTexCoord2f(1.0f, 0.0f); gl.glVertex3f(1.0f, -1.0f, 1.0f);
+                gl.glTexCoord2f(1.0f, 1.0f); gl.glVertex3f(1.0f, 1.0f, 1.0f);
+                gl.glTexCoord2f(0.0f, 1.0f); gl.glVertex3f(-1.0f, 1.0f, 1.0f);
+                gl.glEnd();
+
+                gl.glBindTexture(GL.GL_TEXTURE_2D, this.texture[1]);
+                gl.glBegin(GL.GL_QUADS);
+                // Back Face
+                gl.glNormal3f(0.0f, 0.0f, -1.0f);
+                gl.glTexCoord2f(1.0f, 0.0f); gl.glVertex3f(-1.0f, -1.0f, -1.0f);
+                gl.glTexCoord2f(1.0f, 1.0f); gl.glVertex3f(-1.0f, 1.0f, -1.0f);
+                gl.glTexCoord2f(0.0f, 1.0f); gl.glVertex3f(1.0f, 1.0f, -1.0f);
+                gl.glTexCoord2f(0.0f, 0.0f); gl.glVertex3f(1.0f, -1.0f, -1.0f);
+                gl.glEnd();
+
+                gl.glBindTexture(GL.GL_TEXTURE_2D, this.texture[2]);
+                gl.glBegin(GL.GL_QUADS);
+                // Top Face
+                gl.glNormal3f(0.0f, 1.0f, 0.0f);
+                gl.glTexCoord2f(0.0f, 1.0f); gl.glVertex3f(-1.0f, 1.0f, -1.0f);
+                gl.glTexCoord2f(0.0f, 0.0f); gl.glVertex3f(-1.0f, 1.0f, 1.0f);
+                gl.glTexCoord2f(1.0f, 0.0f); gl.glVertex3f(1.0f, 1.0f, 1.0f);
+                gl.glTexCoord2f(1.0f, 1.0f); gl.glVertex3f(1.0f, 1.0f, -1.0f);
+                gl.glEnd();
+
+                gl.glBindTexture(GL.GL_TEXTURE_2D, this.texture[3]);
+                gl.glBegin(GL.GL_QUADS);
+                // Bottom Face
+                gl.glNormal3f(0.0f, -1.0f, 0.0f);
+                gl.glTexCoord2f(1.0f, 1.0f); gl.glVertex3f(-1.0f, -1.0f, -1.0f);
+                gl.glTexCoord2f(0.0f, 1.0f); gl.glVertex3f(1.0f, -1.0f, -1.0f);
+                gl.glTexCoord2f(0.0f, 0.0f); gl.glVertex3f(1.0f, -1.0f, 1.0f);
+                gl.glTexCoord2f(1.0f, 0.0f); gl.glVertex3f(-1.0f, -1.0f, 1.0f);
+                gl.glEnd();
+
+                gl.glBindTexture(GL.GL_TEXTURE_2D, this.texture[4]);
+                gl.glBegin(GL.GL_QUADS);
+                // Right face
+                gl.glNormal3f(1.0f, 0.0f, 0.0f);
+                gl.glTexCoord2f(1.0f, 0.0f); gl.glVertex3f(1.0f, -1.0f, -1.0f);
+                gl.glTexCoord2f(1.0f, 1.0f); gl.glVertex3f(1.0f, 1.0f, -1.0f);
+                gl.glTexCoord2f(0.0f, 1.0f); gl.glVertex3f(1.0f, 1.0f, 1.0f);
+                gl.glTexCoord2f(0.0f, 0.0f); gl.glVertex3f(1.0f, -1.0f, 1.0f);
+                gl.glEnd();
+
+                gl.glBindTexture(GL.GL_TEXTURE_2D, this.texture[5]);
+                gl.glBegin(GL.GL_QUADS);
+                // Left Face
+                gl.glNormal3f(-1.0f, 0.0f, 0.0f);
+                gl.glTexCoord2f(0.0f, 0.0f); gl.glVertex3f(-1.0f, -1.0f, -1.0f);
+                gl.glTexCoord2f(1.0f, 0.0f); gl.glVertex3f(-1.0f, -1.0f, 1.0f);
+                gl.glTexCoord2f(1.0f, 1.0f); gl.glVertex3f(-1.0f, 1.0f, 1.0f);
+                gl.glTexCoord2f(0.0f, 1.0f); gl.glVertex3f(-1.0f, 1.0f, -1.0f);
+                gl.glEnd();
+
+            gl.glPopMatrix();
+
 
             float[] pos = { 0.0f, 0.0f, 0.0f, 1.0f };
             float[] amb = { 1f, 1f, 1f, 1.0f };
@@ -231,10 +262,34 @@ namespace ExamenFinal
             gl.glLightfv(GL.GL_LIGHT2, GL.GL_DIFFUSE, this.LightDiffuse);	// Setup The Diffuse Light
             gl.glLightfv(GL.GL_LIGHT2, GL.GL_POSITION, pos);	// Position The Light
 
-            xrot = xrot + xspeed;
-            
             // Forzar el dibujado de todo y cambiar el buffer de ser necesario
             gl.wglSwapBuffers(csgl12Control.GetHDC());
         }
+
+        public void KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.D)
+            {
+                xrot = xrot + xspeed;
+            }
+            else if (e.KeyCode == Keys.A)
+            {
+                xrot = xrot - xspeed;
+            }
+            else if (e.KeyCode == Keys.W)
+            {
+                yrot = yrot + yspeed;
+            }
+            else if (e.KeyCode == Keys.S)
+            {
+                yrot = yrot - yspeed;
+            }
+        }
+
+        public void KeyUp(object sender, KeyEventArgs e)
+        {
+
+        }
+
     }
 }

@@ -35,7 +35,7 @@
             // 
             this.csgL12Control1.Location = new System.Drawing.Point(12, 12);
             this.csgL12Control1.Name = "csgL12Control1";
-            this.csgL12Control1.Size = new System.Drawing.Size(626, 448);
+            this.csgL12Control1.Size = new System.Drawing.Size(879, 529);
             this.csgL12Control1.TabIndex = 0;
             this.csgL12Control1.Text = "csgL12Control1";
             // 
@@ -43,7 +43,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(650, 472);
+            this.ClientSize = new System.Drawing.Size(903, 588);
             this.Controls.Add(this.csgL12Control1);
             this.Name = "Form1";
             this.Text = "Form1";
